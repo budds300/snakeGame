@@ -3,10 +3,18 @@ package com.snake;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Random;
 
 
 public class GamePanel extends JPanel implements ActionListener {
+
+
+
     static final int SCREEN_WIDTH =600;
     static final int SCREEN_HEIGHT =600;
     static final int UNIT_SIZE =25;
@@ -15,6 +23,7 @@ public class GamePanel extends JPanel implements ActionListener {
     static final int DELAY=75;
     final int x[]= new int[GAME_UNITS];
     final int y[]= new int[GAME_UNITS];
+    private String highScore = "";
     int bodyParts = 6;
     int applesEaten;
     int appleX;
@@ -36,10 +45,17 @@ public class GamePanel extends JPanel implements ActionListener {
         running = true;
         timer = new Timer(DELAY,this);
         timer.start();
+
+
     }
 
     public void paintComponent(Graphics g){
+
         super.paintComponent(g);
+        if (highScore.equals("")){
+//            highScore = this.getHighscore();
+        }
+
         draw(g);
     }
     public  void draw(Graphics g){
@@ -81,6 +97,7 @@ public class GamePanel extends JPanel implements ActionListener {
         // if the game doesn't run, the game over method is called
         else{
             gameOver(g);
+
         }
 
     }
@@ -155,20 +172,95 @@ public class GamePanel extends JPanel implements ActionListener {
     public void gameOver(Graphics g){
 
         // Score text on the game over screen
+
         g.setColor(Color.red);
         g.setFont(new Font("Ink Free",Font.BOLD,40));
         //Font metrics is used here to align text to the center of the screen
         FontMetrics metrics1 = getFontMetrics(g.getFont());
         //getFont().getSize is to put the score at the top of the screen.
         g.drawString("Score "+ applesEaten,  (SCREEN_WIDTH- metrics1.stringWidth("Score "+ applesEaten))/2,g.getFont().getSize());
+//        String name = JOptionPane.showInputDialog("You set a new highscore. what is your name?");
+//        g.drawString("Highscore:" + highScore +"-"+ applesEaten,(SCREEN_WIDTH- metrics1.stringWidth("highscore "+ highScore))/2,g.getFont().getSize()+50);
+//        checkScore();
         //Game over text
         g.setColor(Color.red);
         g.setFont(new Font("Ink Free",Font.BOLD,75));
         //Font metrics is used here to align text to the center of the screen
         FontMetrics metrics = getFontMetrics(g.getFont());
         g.drawString("Game Over",  (SCREEN_WIDTH- metrics.stringWidth("Game Over"))/2,SCREEN_HEIGHT/2);
-
+//        checkScore();
     }
+
+    public void checkScore() {
+        if (highScore.equals(""))
+            return;
+        if (applesEaten > Integer.parseInt(highScore.split(":")[1])) {
+            //user has set a new record
+            String name = JOptionPane.showInputDialog("You set a new highscore. what is your name?");
+            highScore = name + ":" + applesEaten;
+            File scoreFile = new File("snake.dat");
+            if (!scoreFile.exists())
+                try {
+                    scoreFile.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            FileWriter writeFile = null;
+            BufferedWriter writer = null;
+            try {
+                writeFile = new FileWriter(scoreFile);
+                writer = new BufferedWriter(writeFile);
+                writer.write(this.highScore);
+            } catch (Exception e) {
+
+            } finally {
+                try {
+                    if (writer != null)
+                        writer.close();
+                } catch (Exception e) {
+                }
+            }
+
+        }
+    }
+    public String getHighscore() {
+        // format : Tamminga:10
+        FileReader readFile = null;
+        BufferedReader reader = null;
+
+        try {
+            readFile = new FileReader("highscore.dat");
+            reader = new BufferedReader(readFile);
+            return reader.readLine();
+        } catch (Exception e) {
+
+            return "Nobody : 0";
+        } finally {
+            try {
+                if (reader != null)
+                    reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+  public void readData (){
+      try {
+          Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/thesnake", "root", "Accessdenied1!");
+          Statement statement = connection.createStatement();
+          ResultSet resultSet = statement.executeQuery("select * from yourscores");
+
+          while (resultSet.next()) {
+              System.out.println(resultSet.getString("FIRSTNAME" + " SCORE"));
+          }
+      }
+      catch (Exception e){
+          e.printStackTrace();
+      }
+
+
+  }
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
